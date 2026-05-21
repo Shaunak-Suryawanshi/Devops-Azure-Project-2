@@ -48,7 +48,7 @@ pipeline {
         stage('Stop Old Container') {
             steps {
                 bat 'docker rm -f %CONTAINER_NAME% || exit /b 0'
-                bat 'powershell -Command "$ids = docker ps -q --filter ''publish=%APP_PORT%''; if ($ids) { $ids | ForEach-Object { docker rm -f $_ } }"'
+                bat "powershell -Command \"\$ids = docker ps -q --filter 'publish=%APP_PORT%'; if (\$ids) { \$ids | ForEach-Object { docker rm -f \$_ } }\""
             }
         }
 
