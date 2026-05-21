@@ -17,6 +17,8 @@ Build a real-world incident platform while learning:
 - Step 4: Redis integration (cache, session demo, rate limiting)
 - Step 5: Docker fundamentals (Docker image build/run lifecycle)
 - Step 6: Docker Compose (modular multi-service setup)
+- Step 7: Git + GitHub workflow (main-only practical flow)
+- Step 8: Jenkins Pipeline CI/CD setup (basic build-deploy-smoke-test)
 
 ## Architecture (Current)
 
@@ -51,13 +53,15 @@ cloud-native-incident-platform/
         docker-compose.app.yml
         docker-compose.mongo.yml
         docker-compose.redis.yml
-    k8s/
     jenkins/
+      Jenkinsfile
+    k8s/
     monitoring/
     security/
   tests/
   scripts/
   docs/
+    jenkins-setup.md
   app.py
   requirements.txt
   .env.example
@@ -73,6 +77,7 @@ cloud-native-incident-platform/
 - Redis (local or Redis Cloud)
 - Docker
 - Docker Compose
+- Jenkins (Pipeline)
 
 ## Environment Variables
 Copy `.env.example` to `.env` and set values:
@@ -91,6 +96,8 @@ REDIS_SSL=true
 RATE_LIMIT_REQUESTS=30
 RATE_LIMIT_WINDOW_SECONDS=60
 ```
+
+For Jenkins pipeline runs, set these in Jenkins job/global environment as well.
 
 ## Local Run (Without Docker)
 
@@ -128,6 +135,22 @@ Stop all services:
 docker compose -f infra/docker/compose/docker-compose.mongo.yml -f infra/docker/compose/docker-compose.redis.yml -f infra/docker/compose/docker-compose.app.yml down
 ```
 
+## Jenkins Pipeline (Step 8)
+
+Pipeline file:
+- `infra/jenkins/Jenkinsfile`
+
+What pipeline currently does:
+- Checkout code
+- Check Docker availability
+- Build Docker image
+- Remove old container if exists
+- Run new container with env vars
+- Smoke test `/health`
+
+Detailed guide:
+- `docs/jenkins-setup.md`
+
 ## API Endpoints (Implemented)
 - `GET /health`
 - `POST /incidents`
@@ -136,17 +159,6 @@ docker compose -f infra/docker/compose/docker-compose.mongo.yml -f infra/docker/
 - `GET /incidents/search?q=<query>`
 - `POST /session/set`
 - `GET /session/<user_id>`
-
-## PowerShell API Testing
-
-```powershell
-Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:1000/incidents" -ContentType "application/json" -Body '{"title":"API Down","description":"Gateway timeout","status":"open"}'
-Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:1000/incidents"
-Invoke-RestMethod -Method Put -Uri "http://127.0.0.1:1000/incidents/API Down/status" -ContentType "application/json" -Body '{"status":"resolved"}'
-Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:1000/incidents/search?q=API"
-Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:1000/session/set" -ContentType "application/json" -Body '{"user_id":"u1","role":"admin"}'
-Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:1000/session/u1"
-```
 
 ## Troubleshooting
 
@@ -166,16 +178,22 @@ Ensure Flask app is configured with:
 ### `REDIS_DB` ValueError
 - Must be numeric (`0`, `1`, etc.)
 
+### Jenkins build fails on Docker
+- Ensure Docker Desktop is running
+- Ensure Jenkins service user can access Docker
+- Check `docker --version` stage output in build logs
+
 ## Why This Project Matters for Jobs
 This project demonstrates:
 - backend + data-store integration
 - cloud service configuration using env vars
 - cache and rate-limiting production patterns
 - modular infra layout used in real teams
+- basic CI/CD automation using Jenkins pipeline-as-code
 
 ## Next Planned Steps
-- Step 7: Git + GitHub workflow
-- Step 8+: Jenkins CI/CD, webhooks, Trivy, Kubernetes, monitoring
+- Step 9: GitHub Webhooks
+- Step 10+: Trivy, Kubernetes, monitoring
 
 ## Recommended Official Docs
 - Flask: https://flask.palletsprojects.com/
@@ -183,3 +201,4 @@ This project demonstrates:
 - MongoDB Atlas: https://www.mongodb.com/docs/atlas/
 - Redis Python client: https://redis.readthedocs.io/
 - Docker Compose: https://docs.docker.com/compose/
+- Jenkins Pipeline: https://www.jenkins.io/doc/book/pipeline/

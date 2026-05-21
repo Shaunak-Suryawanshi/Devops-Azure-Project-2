@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "incident-platform"
+        CONTAINER_NAME = "incident-platform-ci"
+        APP_PORT = "1000"
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Docker Version Check') {
+            steps {
+                bat 'docker --version'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                bat 'docker build -f infra/docker/app/Dockerfile -t %IMAGE_NAME%:%BUILD_NUMBER% -t %IMAGE_NAME%:latest .'
+            }
+        }
+
+        stage('Stop Old Container') {
+            steps {
+                bat 'docker rm -f %CONTAINER_NAME% || exit /b 0'
+            }
+        }
+
+        stage('Run New Container') {
+            steps {
+                bat '''docker run -d --name %CONTAINER_NAME% -p %APP_PORT%:1000 ^
+                -e MONGODB_URI="%MONGODB_URI%" ^
+                -e MONGODB_DB_NAME="%MONGODB_DB_NAME%" ^
+                -e REDIS_HOST="%REDIS_HOST%" ^
+                -e REDIS_PORT="%REDIS_PORT%" ^
+                -e REDIS_DB="%REDIS_DB%" ^
+                -e REDIS_USERNAME="%REDIS_USERNAME%" ^
+                -e REDIS_PASSWORD="%REDIS_PASSWORD%" ^
+                -e REDIS_SSL="%REDIS_SSL%" ^
+                -e RATE_LIMIT_REQUESTS="%RATE_LIMIT_REQUESTS%" ^
+                -e RATE_LIMIT_WINDOW_SECONDS="%RATE_LIMIT_WINDOW_SECONDS%" ^
+                %IMAGE_NAME%:%BUILD_NUMBER%'''
+            }
+        }
+
+        stage('Smoke Test') {
+            steps {
+                bat 'powershell -Command "Start-Sleep -Seconds 8; Invoke-RestMethod -Method Get -Uri http://127.0.0.1:%APP_PORT%/health | ConvertTo-Json"'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully. New container is running.'
+        }
+        failure {
+            bat 'docker logs %CONTAINER_NAME% || exit /b 0'
+            echo 'Pipeline failed. Check logs above.'
+        }
+    }
+}
