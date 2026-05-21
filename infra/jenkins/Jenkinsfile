@@ -4,7 +4,16 @@ pipeline {
     environment {
         IMAGE_NAME = "incident-platform"
         CONTAINER_NAME = "incident-platform-ci"
-        APP_PORT = "1000"
+        APP_PORT = "1001"
+        MONGODB_DB_NAME = "${env.MONGODB_DB_NAME ?: 'incident_platform'}"
+        REDIS_HOST = "${env.REDIS_HOST ?: 'localhost'}"
+        REDIS_PORT = "${env.REDIS_PORT ?: '6379'}"
+        REDIS_DB = "${env.REDIS_DB ?: '0'}"
+        REDIS_USERNAME = "${env.REDIS_USERNAME ?: ''}"
+        REDIS_PASSWORD = "${env.REDIS_PASSWORD ?: ''}"
+        REDIS_SSL = "${env.REDIS_SSL ?: 'false'}"
+        RATE_LIMIT_REQUESTS = "${env.RATE_LIMIT_REQUESTS ?: '30'}"
+        RATE_LIMIT_WINDOW_SECONDS = "${env.RATE_LIMIT_WINDOW_SECONDS ?: '60'}"
     }
 
     stages {
@@ -20,6 +29,16 @@ pipeline {
             }
         }
 
+        stage('Validate Required Environment') {
+            steps {
+                script {
+                    if (!env.MONGODB_URI?.trim()) {
+                        error("MONGODB_URI is missing. Set it in Jenkins job/global environment before running.")
+                    }
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 bat 'docker build -f infra/docker/app/Dockerfile -t %IMAGE_NAME%:%BUILD_NUMBER% -t %IMAGE_NAME%:latest .'
@@ -29,6 +48,7 @@ pipeline {
         stage('Stop Old Container') {
             steps {
                 bat 'docker rm -f %CONTAINER_NAME% || exit /b 0'
+                bat 'for /f %i in (\'docker ps -q --filter "publish=%APP_PORT%"\') do docker rm -f %i'
             }
         }
 
