@@ -7,12 +7,12 @@ pipeline {
         APP_PORT = "1001"
         MONGODB_URI = credentials('MONGODB_URI')
         MONGODB_DB_NAME = 'incident_platform'
-        REDIS_HOST = 'host.docker.internal'
-        REDIS_PORT = '6379'
+        REDIS_HOST = credentials('REDIS_HOST')
+        REDIS_PORT = credentials('REDIS_PORT')
         REDIS_DB = '0'
-        REDIS_USERNAME = ''
+        REDIS_USERNAME = credentials('REDIS_USERNAME')
         REDIS_PASSWORD = credentials('REDIS_PASSWORD')
-        REDIS_SSL = 'false'
+        REDIS_SSL = credentials('REDIS_SSL')
         RATE_LIMIT_REQUESTS = '30'
         RATE_LIMIT_WINDOW_SECONDS = '60'
     }
