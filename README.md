@@ -23,6 +23,7 @@ Build a real-world incident platform while learning:
 - Step 10: Trivy image scanning integrated in Jenkins
 - Step 11: Kubernetes deployment on Minikube (3-tier running)
 - Step 12: Monitoring stack on Kubernetes (Prometheus + Grafana)
+- Step 13: Advanced Kubernetes ops (replicas, rolling updates, config/secrets, probes)
 
 ## Architecture (Current)
 
@@ -42,37 +43,22 @@ Tier 3: Data Layer
 ```text
 cloud-native-incident-platform/
   app/
-    templates/
-    static/
-    routes/
-    services/
-    models/
-    utils/
-    __init__.py
   infra/
     docker/
-      app/
-        Dockerfile
-        .dockerignore
-      compose/
-        docker-compose.app.yml
-        docker-compose.mongo.yml
-        docker-compose.redis.yml
     jenkins/
-      Jenkinsfile
     k8s/
       namespace.yaml
       mongo.yaml
       redis.yaml
       app.yaml
+      app-configmap.yaml
+      app-secret.yaml
     monitoring/
       prometheus-configmap.yaml
       prometheus.yaml
       grafana-datasource-configmap.yaml
       grafana.yaml
     security/
-  tests/
-  scripts/
   docs/
     jenkins-setup.md
     github-webhook-setup.md
@@ -92,65 +78,41 @@ cloud-native-incident-platform/
 - MongoDB Atlas
 - Redis (local or Redis Cloud)
 - Docker
-- Docker Compose
 - Jenkins (Pipeline)
-- GitHub Webhooks
-- ngrok
 - Kubernetes (Minikube + kubectl)
+- Prometheus + Grafana
 - Trivy
-- Prometheus
-- Grafana
 
-## Local Run (Without Docker)
+## Kubernetes (Step 11 + Step 13)
 
-```powershell
-python -m pip install -r requirements.txt
-python app.py
-```
-
-App URLs:
-- UI: `http://127.0.0.1:1000/`
-- Health: `http://127.0.0.1:1000/health`
-- Metrics: `http://127.0.0.1:1000/metrics`
-
-## Jenkins + Webhook + Trivy
-- Pipeline file: `infra/jenkins/Jenkinsfile`
-- Webhook URL format: `https://<ngrok-url>/github-webhook/`
-- Pipeline includes Docker build, Trivy scan, deploy, and smoke test.
-
-Docs:
-- `docs/jenkins-setup.md`
-- `docs/github-webhook-setup.md`
-
-## Kubernetes (Step 11)
-Applied manifests:
+Base manifests:
 - `infra/k8s/namespace.yaml`
 - `infra/k8s/mongo.yaml`
 - `infra/k8s/redis.yaml`
 - `infra/k8s/app.yaml`
 
-Guide:
-- `docs/k8s-minikube-setup.md`
+Advanced config manifests:
+- `infra/k8s/app-configmap.yaml` (non-secret app settings)
+- `infra/k8s/app-secret.yaml` (secret placeholders)
+
+Step 13 improvements now implemented:
+- App replicas increased to `2`
+- Rolling update strategy enabled (`maxSurge: 1`, `maxUnavailable: 0`)
+- Readiness and liveness probes on `/health`
+- App env moved to ConfigMap/Secret refs (`envFrom`)
 
 ## Monitoring (Step 12)
+
 Applied manifests:
 - `infra/monitoring/prometheus-configmap.yaml`
 - `infra/monitoring/prometheus.yaml`
 - `infra/monitoring/grafana-datasource-configmap.yaml`
 - `infra/monitoring/grafana.yaml`
 
-What is monitored:
-- Flask HTTP metrics via `/metrics`
-- Prometheus scrapes app metrics every 15s
-- Grafana is preconfigured with Prometheus datasource
-
-Guide:
-- `docs/monitoring-setup.md`
-
 ## Trivy Results (Current)
-- Trivy stage is active in Jenkins.
-- Current image scan reports 4 HIGH vulnerabilities (ncurses packages in base OS).
-- Pipeline uses report-only mode (`--exit-code 0`) in learning stage.
+- Trivy scan integrated in Jenkins pipeline.
+- Current image scan reports 4 HIGH vulnerabilities (ncurses family).
+- Pipeline is in report-only mode (`--exit-code 0`) for learning stage.
 
 ## API Endpoints (Implemented)
 - `GET /`
@@ -164,16 +126,11 @@ Guide:
 - `GET /session/<user_id>`
 
 ## Next Planned Steps
-- Step 13: Advanced DevOps concepts (scaling, rolling updates, env/secrets)
-- Step 14: Final architecture review
+- Step 14: Final architecture review and interview-ready explanation
 
 ## Recommended Official Docs
-- Flask: https://flask.palletsprojects.com/
-- PyMongo: https://www.mongodb.com/docs/drivers/pymongo/
-- Redis Python client: https://redis.readthedocs.io/
-- Jenkins Pipeline: https://www.jenkins.io/doc/book/pipeline/
-- GitHub Webhooks: https://docs.github.com/en/webhooks
-- Trivy: https://trivy.dev/latest/docs/
 - Kubernetes: https://kubernetes.io/docs/home/
 - Prometheus: https://prometheus.io/docs/introduction/overview/
 - Grafana: https://grafana.com/docs/
+- Jenkins Pipeline: https://www.jenkins.io/doc/book/pipeline/
+- Trivy: https://trivy.dev/latest/docs/

@@ -4,7 +4,12 @@ metadata:
   name: incident-app
   namespace: incident-platform
 spec:
-  replicas: 1
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: incident-app
@@ -19,27 +24,23 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 1000
-          env:
-            - name: MONGODB_URI
-              value: mongodb://mongo:27017/
-            - name: MONGODB_DB_NAME
-              value: incident_platform
-            - name: REDIS_HOST
-              value: redis
-            - name: REDIS_PORT
-              value: "6379"
-            - name: REDIS_DB
-              value: "0"
-            - name: REDIS_USERNAME
-              value: ""
-            - name: REDIS_PASSWORD
-              value: ""
-            - name: REDIS_SSL
-              value: "false"
-            - name: RATE_LIMIT_REQUESTS
-              value: "30"
-            - name: RATE_LIMIT_WINDOW_SECONDS
-              value: "60"
+          envFrom:
+            - configMapRef:
+                name: incident-app-config
+            - secretRef:
+                name: incident-app-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 1000
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 1000
+            initialDelaySeconds: 15
+            periodSeconds: 20
 ---
 apiVersion: v1
 kind: Service

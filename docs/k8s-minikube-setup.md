@@ -1,14 +1,16 @@
-# Kubernetes on Minikube Runbook (Step 11)
+# Kubernetes on Minikube Runbook (Step 11 + Step 13)
 
-This runbook documents deployment of the 3-tier incident platform on Minikube.
+This runbook documents deployment and advanced operations for the 3-tier platform on Minikube.
 
 ## Files Used
 - `infra/k8s/namespace.yaml`
 - `infra/k8s/mongo.yaml`
 - `infra/k8s/redis.yaml`
 - `infra/k8s/app.yaml`
+- `infra/k8s/app-configmap.yaml`
+- `infra/k8s/app-secret.yaml`
 
-## Apply Order
+## Initial Apply (Step 11)
 
 ```powershell
 kubectl apply -f infra/k8s/namespace.yaml
@@ -17,28 +19,37 @@ kubectl apply -f infra/k8s/redis.yaml
 kubectl apply -f infra/k8s/app.yaml
 ```
 
-## Verify Resources
+## Advanced Apply (Step 13)
 
 ```powershell
-kubectl get all -n incident-platform
+kubectl apply -f infra/k8s/app-configmap.yaml
+kubectl apply -f infra/k8s/app-secret.yaml
+kubectl apply -f infra/k8s/app.yaml
+```
+
+## What Step 13 Adds
+- Replicas: app scaled to 2
+- Rolling strategy:
+  - `maxSurge: 1`
+  - `maxUnavailable: 0`
+- Health probes:
+  - readiness: `/health`
+  - liveness: `/health`
+- Externalized config:
+  - ConfigMap for non-secret values
+  - Secret for sensitive values
+
+## Verify Rollout
+
+```powershell
+kubectl rollout status deployment/incident-app -n incident-platform
+kubectl get deploy -n incident-platform
 kubectl get pods -n incident-platform -w
 ```
 
 Expected:
-- `mongo` pod: `Running`
-- `redis` pod: `Running`
-- `incident-app` pod: `Running`
-
-## Common Issue: App ImagePullBackOff
-If app image is local only, Minikube cannot pull it from Docker Hub by default.
-
-Fix:
-
-```powershell
-minikube image load incident-platform:latest
-kubectl rollout restart deployment/incident-app -n incident-platform
-kubectl get pods -n incident-platform -w
-```
+- `incident-app` shows `2/2` available
+- both app pods `Running` and `Ready`
 
 ## Access Application
 
@@ -46,23 +57,19 @@ kubectl get pods -n incident-platform -w
 minikube service incident-app -n incident-platform --url
 ```
 
-Open URL and test:
-- `/`
-- `/health`
+## Common Issue: ImagePullBackOff
+If using local image only:
 
-## Why Services Work by Name
-In Kubernetes, app connects to:
-- Mongo service DNS: `mongo`
-- Redis service DNS: `redis`
-
-This keeps app config stable even when pod IPs change.
+```powershell
+minikube image load incident-platform:latest
+kubectl rollout restart deployment/incident-app -n incident-platform
+```
 
 ## Interview Talking Points
-- Used `Namespace` for workload isolation.
-- Used `Deployment` for each tier (self-healing, rollout support).
-- Used `ClusterIP` services for internal DB/cache.
-- Used `NodePort` service for external app access in Minikube.
-- Handled local image pull issue with `minikube image load`.
+- Used rolling updates to reduce downtime risk.
+- Added readiness/liveness probes for safer self-healing.
+- Moved config to ConfigMap and secrets to Secret for production-style separation.
+- Scaled app tier horizontally from 1 to 2 replicas.
 
 ## Cleanup
 
