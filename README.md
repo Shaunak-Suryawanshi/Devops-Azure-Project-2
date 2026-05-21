@@ -20,6 +20,8 @@ Build a real-world incident platform while learning:
 - Step 7: Git + GitHub workflow (main-only practical flow)
 - Step 8: Jenkins Pipeline CI/CD setup (build, deploy, smoke test)
 - Step 9: GitHub Webhook auto-trigger with ngrok
+- Step 10: Trivy image scanning integrated in Jenkins
+- Step 11: Kubernetes deployment on Minikube (3-tier running)
 
 ## Architecture (Current)
 
@@ -57,6 +59,10 @@ cloud-native-incident-platform/
     jenkins/
       Jenkinsfile
     k8s/
+      namespace.yaml
+      mongo.yaml
+      redis.yaml
+      app.yaml
     monitoring/
     security/
   tests/
@@ -64,6 +70,7 @@ cloud-native-incident-platform/
   docs/
     jenkins-setup.md
     github-webhook-setup.md
+    k8s-minikube-setup.md
   app.py
   requirements.txt
   .env.example
@@ -82,26 +89,8 @@ cloud-native-incident-platform/
 - Jenkins (Pipeline)
 - GitHub Webhooks
 - ngrok
-
-## Environment Variables
-Copy `.env.example` to `.env` and set values:
-
-```env
-MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/
-MONGODB_DB_NAME=incident_platform
-
-REDIS_HOST=<redis-host>
-REDIS_PORT=<redis-port>
-REDIS_DB=0
-REDIS_USERNAME=default
-REDIS_PASSWORD=<redis-password>
-REDIS_SSL=true
-
-RATE_LIMIT_REQUESTS=30
-RATE_LIMIT_WINDOW_SECONDS=60
-```
-
-For Jenkins runs, secret values should come from Jenkins Credentials.
+- Kubernetes (Minikube + kubectl)
+- Trivy
 
 ## Local Run (Without Docker)
 
@@ -116,48 +105,41 @@ App URLs:
 
 ## Docker Compose (Modular)
 
-Run all services together:
-
 ```powershell
 docker compose -f infra/docker/compose/docker-compose.mongo.yml -f infra/docker/compose/docker-compose.redis.yml -f infra/docker/compose/docker-compose.app.yml up -d --build
 ```
 
-Check status:
+## Jenkins + Webhook
 
-```powershell
-docker compose -f infra/docker/compose/docker-compose.mongo.yml -f infra/docker/compose/docker-compose.redis.yml -f infra/docker/compose/docker-compose.app.yml ps
-```
+- Pipeline file: `infra/jenkins/Jenkinsfile`
+- Webhook URL format: `https://<ngrok-url>/github-webhook/`
+- Pipeline currently includes Docker build + Trivy scan + deploy + smoke test.
 
-Stop all services:
-
-```powershell
-docker compose -f infra/docker/compose/docker-compose.mongo.yml -f infra/docker/compose/docker-compose.redis.yml -f infra/docker/compose/docker-compose.app.yml down
-```
-
-## Jenkins Pipeline (Step 8)
-
-Pipeline file:
-- `infra/jenkins/Jenkinsfile`
-
-What pipeline currently does:
-- Checkout code
-- Check Docker availability
-- Build Docker image
-- Remove old container if exists
-- Run new container on host port `1001`
-- Smoke test `/health`
-
-Detailed guide:
+Docs:
 - `docs/jenkins-setup.md`
-
-## GitHub Webhook (Step 9)
-
-Current flow:
-- GitHub push triggers Jenkins automatically
-- Webhook endpoint is exposed with ngrok
-
-Detailed guide:
 - `docs/github-webhook-setup.md`
+
+## Kubernetes (Step 11)
+
+Applied manifests:
+- `infra/k8s/namespace.yaml`
+- `infra/k8s/mongo.yaml`
+- `infra/k8s/redis.yaml`
+- `infra/k8s/app.yaml`
+
+Current verified state:
+- `incident-app` pod running
+- `mongo` pod running
+- `redis` pod running
+- Service health reachable and app working via Minikube
+
+Kubernetes guide:
+- `docs/k8s-minikube-setup.md`
+
+## Trivy Results (Current)
+- Trivy stage is active in Jenkins.
+- Current image scan reports 4 HIGH vulnerabilities (ncurses packages in base OS).
+- Pipeline is set to report-only mode (`--exit-code 0`) for learning stage.
 
 ## API Endpoints (Implemented)
 - `GET /health`
@@ -168,41 +150,10 @@ Detailed guide:
 - `POST /session/set`
 - `GET /session/<user_id>`
 
-## Troubleshooting
-
-### `TemplateNotFound: index.html`
-Ensure Flask app uses `template_folder="app/templates"`.
-
-### Redis shows `error` in `/health`
-- Check host, port, password, ssl mode.
-- For Redis Cloud, usually set `REDIS_SSL=true` and cloud host/port.
-
-### MongoDB connection issues
-- Validate Atlas DB user permissions.
-- Allow current IP in Atlas Network Access.
-- URL-encode special characters in password.
-
-### Jenkins build fails
-- Ensure Docker Desktop is running.
-- Ensure Jenkins service user can access Docker.
-- Check `docker --version` stage output.
-
-### Webhook does not trigger
-- Verify Jenkins job option `GitHub hook trigger for GITScm polling` is enabled.
-- Verify webhook URL ends with `/github-webhook/`.
-- Keep ngrok tunnel running.
-
-## Why This Project Matters for Jobs
-This project demonstrates:
-- backend + data-store integration
-- cloud service configuration using env vars and credentials
-- cache and rate-limiting production patterns
-- modular infra layout used in real teams
-- CI/CD automation with Jenkins and GitHub webhooks
-
 ## Next Planned Steps
-- Step 10: Trivy security scanning
-- Step 11+: Kubernetes and monitoring
+- Step 12: Monitoring stack (Prometheus + Grafana)
+- Step 13: Advanced DevOps concepts (scaling, rolling updates, env/secrets)
+- Step 14: Final architecture review
 
 ## Recommended Official Docs
 - Flask: https://flask.palletsprojects.com/
@@ -212,4 +163,6 @@ This project demonstrates:
 - Docker Compose: https://docs.docker.com/compose/
 - Jenkins Pipeline: https://www.jenkins.io/doc/book/pipeline/
 - GitHub Webhooks: https://docs.github.com/en/webhooks
-- ngrok: https://ngrok.com/docs
+- Trivy: https://trivy.dev/latest/docs/
+- Kubernetes: https://kubernetes.io/docs/home/
+- Minikube: https://minikube.sigs.k8s.io/docs/
