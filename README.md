@@ -18,7 +18,8 @@ Build a real-world incident platform while learning:
 - Step 5: Docker fundamentals (Docker image build/run lifecycle)
 - Step 6: Docker Compose (modular multi-service setup)
 - Step 7: Git + GitHub workflow (main-only practical flow)
-- Step 8: Jenkins Pipeline CI/CD setup (basic build-deploy-smoke-test)
+- Step 8: Jenkins Pipeline CI/CD setup (build, deploy, smoke test)
+- Step 9: GitHub Webhook auto-trigger with ngrok
 
 ## Architecture (Current)
 
@@ -62,6 +63,7 @@ cloud-native-incident-platform/
   scripts/
   docs/
     jenkins-setup.md
+    github-webhook-setup.md
   app.py
   requirements.txt
   .env.example
@@ -78,6 +80,8 @@ cloud-native-incident-platform/
 - Docker
 - Docker Compose
 - Jenkins (Pipeline)
+- GitHub Webhooks
+- ngrok
 
 ## Environment Variables
 Copy `.env.example` to `.env` and set values:
@@ -97,7 +101,7 @@ RATE_LIMIT_REQUESTS=30
 RATE_LIMIT_WINDOW_SECONDS=60
 ```
 
-For Jenkins pipeline runs, set these in Jenkins job/global environment as well.
+For Jenkins runs, secret values should come from Jenkins Credentials.
 
 ## Local Run (Without Docker)
 
@@ -111,11 +115,6 @@ App URLs:
 - Health: `http://127.0.0.1:1000/health`
 
 ## Docker Compose (Modular)
-
-This project uses three separate compose files:
-- `docker-compose.mongo.yml` for MongoDB service
-- `docker-compose.redis.yml` for Redis service
-- `docker-compose.app.yml` for Flask app service
 
 Run all services together:
 
@@ -145,11 +144,20 @@ What pipeline currently does:
 - Check Docker availability
 - Build Docker image
 - Remove old container if exists
-- Run new container with env vars
+- Run new container on host port `1001`
 - Smoke test `/health`
 
 Detailed guide:
 - `docs/jenkins-setup.md`
+
+## GitHub Webhook (Step 9)
+
+Current flow:
+- GitHub push triggers Jenkins automatically
+- Webhook endpoint is exposed with ngrok
+
+Detailed guide:
+- `docs/github-webhook-setup.md`
 
 ## API Endpoints (Implemented)
 - `GET /health`
@@ -163,37 +171,38 @@ Detailed guide:
 ## Troubleshooting
 
 ### `TemplateNotFound: index.html`
-Ensure Flask app is configured with:
-- `template_folder="app/templates"`
+Ensure Flask app uses `template_folder="app/templates"`.
 
 ### Redis shows `error` in `/health`
-- Check host, port, username, password
-- Ensure TLS if cloud: `REDIS_SSL=true`
+- Check host, port, password, ssl mode.
+- For Redis Cloud, usually set `REDIS_SSL=true` and cloud host/port.
 
 ### MongoDB connection issues
-- Validate Atlas DB user permissions
-- Allow current IP in Atlas Network Access
-- URL-encode special characters in password
+- Validate Atlas DB user permissions.
+- Allow current IP in Atlas Network Access.
+- URL-encode special characters in password.
 
-### `REDIS_DB` ValueError
-- Must be numeric (`0`, `1`, etc.)
+### Jenkins build fails
+- Ensure Docker Desktop is running.
+- Ensure Jenkins service user can access Docker.
+- Check `docker --version` stage output.
 
-### Jenkins build fails on Docker
-- Ensure Docker Desktop is running
-- Ensure Jenkins service user can access Docker
-- Check `docker --version` stage output in build logs
+### Webhook does not trigger
+- Verify Jenkins job option `GitHub hook trigger for GITScm polling` is enabled.
+- Verify webhook URL ends with `/github-webhook/`.
+- Keep ngrok tunnel running.
 
 ## Why This Project Matters for Jobs
 This project demonstrates:
 - backend + data-store integration
-- cloud service configuration using env vars
+- cloud service configuration using env vars and credentials
 - cache and rate-limiting production patterns
 - modular infra layout used in real teams
-- basic CI/CD automation using Jenkins pipeline-as-code
+- CI/CD automation with Jenkins and GitHub webhooks
 
 ## Next Planned Steps
-- Step 9: GitHub Webhooks
-- Step 10+: Trivy, Kubernetes, monitoring
+- Step 10: Trivy security scanning
+- Step 11+: Kubernetes and monitoring
 
 ## Recommended Official Docs
 - Flask: https://flask.palletsprojects.com/
@@ -202,3 +211,5 @@ This project demonstrates:
 - Redis Python client: https://redis.readthedocs.io/
 - Docker Compose: https://docs.docker.com/compose/
 - Jenkins Pipeline: https://www.jenkins.io/doc/book/pipeline/
+- GitHub Webhooks: https://docs.github.com/en/webhooks
+- ngrok: https://ngrok.com/docs
