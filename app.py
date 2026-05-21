@@ -3,11 +3,13 @@ import json
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
+from prometheus_flask_exporter import PrometheusMetrics
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 import redis
 
 app = Flask(__name__, template_folder="app/templates", static_folder="app/static")
+metrics = PrometheusMetrics(app)
 load_dotenv()
 
 MONGODB_URI = os.getenv("MONGODB_URI", "")
