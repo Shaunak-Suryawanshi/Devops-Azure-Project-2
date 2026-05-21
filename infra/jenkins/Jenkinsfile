@@ -5,15 +5,16 @@ pipeline {
         IMAGE_NAME = "incident-platform"
         CONTAINER_NAME = "incident-platform-ci"
         APP_PORT = "1001"
-        MONGODB_DB_NAME = "${env.MONGODB_DB_NAME ?: 'incident_platform'}"
-        REDIS_HOST = "${env.REDIS_HOST ?: 'localhost'}"
-        REDIS_PORT = "${env.REDIS_PORT ?: '6379'}"
-        REDIS_DB = "${env.REDIS_DB ?: '0'}"
-        REDIS_USERNAME = "${env.REDIS_USERNAME ?: ''}"
-        REDIS_PASSWORD = "${env.REDIS_PASSWORD ?: ''}"
-        REDIS_SSL = "${env.REDIS_SSL ?: 'false'}"
-        RATE_LIMIT_REQUESTS = "${env.RATE_LIMIT_REQUESTS ?: '30'}"
-        RATE_LIMIT_WINDOW_SECONDS = "${env.RATE_LIMIT_WINDOW_SECONDS ?: '60'}"
+        MONGODB_URI = credentials('MONGODB_URI')
+        MONGODB_DB_NAME = credentials('MONGODB_DB_NAME')
+        REDIS_HOST = credentials('REDIS_HOST')
+        REDIS_PORT = credentials('REDIS_PORT')
+        REDIS_DB = credentials('REDIS_DB')
+        REDIS_USERNAME = credentials('REDIS_USERNAME')
+        REDIS_PASSWORD = credentials('REDIS_PASSWORD')
+        REDIS_SSL = credentials('REDIS_SSL')
+        RATE_LIMIT_REQUESTS = credentials('RATE_LIMIT_REQUESTS')
+        RATE_LIMIT_WINDOW_SECONDS = credentials('RATE_LIMIT_WINDOW_SECONDS')
     }
 
     stages {
@@ -33,7 +34,7 @@ pipeline {
             steps {
                 script {
                     if (!env.MONGODB_URI?.trim()) {
-                        error("MONGODB_URI is missing. Set it in Jenkins job/global environment before running.")
+                        error("MONGODB_URI credential is missing or empty. Check Jenkins Global Credentials ID: MONGODB_URI.")
                     }
                 }
             }
