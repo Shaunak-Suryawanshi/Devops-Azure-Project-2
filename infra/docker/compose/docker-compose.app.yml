@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: ../../..
+      dockerfile: infra/docker/app/Dockerfile
+    container_name: incident-platform-app
+    ports:
+      - "1000:1000"
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/
+      MONGODB_DB_NAME: incident_platform
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      REDIS_USERNAME: ""
+      REDIS_PASSWORD: ""
+      REDIS_SSL: "false"
+      RATE_LIMIT_REQUESTS: 30
+      RATE_LIMIT_WINDOW_SECONDS: 60
