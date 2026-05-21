@@ -38,6 +38,10 @@ Tier 3: Data Layer
 - MongoDB for persistent incident data
 - Redis (local/cloud) for cache, session, and rate-limit counters
 
+## Architecture Diagram
+
+![Cloud-Native 3-Tier Incident Platform Architecture](docs/diagram.png)
+
 ## Folder Structure
 
 ```text
