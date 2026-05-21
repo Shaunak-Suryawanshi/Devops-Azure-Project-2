@@ -6,15 +6,15 @@ pipeline {
         CONTAINER_NAME = "incident-platform-ci"
         APP_PORT = "1001"
         MONGODB_URI = credentials('MONGODB_URI')
-        MONGODB_DB_NAME = credentials('MONGODB_DB_NAME')
-        REDIS_HOST = credentials('REDIS_HOST')
-        REDIS_PORT = credentials('REDIS_PORT')
-        REDIS_DB = credentials('REDIS_DB')
-        REDIS_USERNAME = credentials('REDIS_USERNAME')
+        MONGODB_DB_NAME = 'incident_platform'
+        REDIS_HOST = 'host.docker.internal'
+        REDIS_PORT = '6379'
+        REDIS_DB = '0'
+        REDIS_USERNAME = ''
         REDIS_PASSWORD = credentials('REDIS_PASSWORD')
-        REDIS_SSL = credentials('REDIS_SSL')
-        RATE_LIMIT_REQUESTS = credentials('RATE_LIMIT_REQUESTS')
-        RATE_LIMIT_WINDOW_SECONDS = credentials('RATE_LIMIT_WINDOW_SECONDS')
+        REDIS_SSL = 'false'
+        RATE_LIMIT_REQUESTS = '30'
+        RATE_LIMIT_WINDOW_SECONDS = '60'
     }
 
     stages {
@@ -82,7 +82,13 @@ pipeline {
             echo 'Pipeline completed successfully. New container is running.'
         }
         failure {
-            bat 'docker logs %CONTAINER_NAME% || exit /b 0'
+            script {
+                if (env.WORKSPACE) {
+                    bat 'docker logs %CONTAINER_NAME% || exit /b 0'
+                } else {
+                    echo 'Skipping docker logs because workspace context is unavailable.'
+                }
+            }
             echo 'Pipeline failed. Check logs above.'
         }
     }
